@@ -1,14 +1,18 @@
 import yaml
 
-with open("conf.yaml", "r") as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-
-client_id = config["clientID"]
-client_secret = config["clientSecret"]
-
+import sys
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+
+with open("conf.yaml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+
+playlist_count_to_insert = int(sys.argv[1])
+
+client_id = config["client_id"]
+client_secret = config["client_secret"]
+
 
 sp = spotipy.Spotify(
     auth_manager=SpotifyOAuth(
@@ -66,38 +70,28 @@ for playlist1 in monthly_playlists:
     monthly_playlists[playlist1]["tracks"] = set(tracks)
 
 
-# get the intersection of all the playlists
-intersections = {}
-for name1, playlist1 in monthly_playlists.items():
-    for name2, playlist2 in monthly_playlists.items():
-        if name1 == name2:
-            continue
+# count the times the traks where in a monthly playlist
+track_counter = {}
+for playlist_name, playlist in monthly_playlists.items():
+    for track in playlist["tracks"]:
+        if track not in track_counter:
+            track_counter[track] = 0
 
-        num1 = int(name1)
-        num2 = int(name2)
+        track_counter[track] += 1
 
-        if num1 > num2:
-            continue
 
-        if abs(num1 - num2) != 1:
-            continue
-
-        intersections[(name1, name2)] = set.intersection(
-            playlist1["tracks"],
-            playlist2["tracks"],
-        )
+# get names of the tracks
+favorit_ids = []
+for track_id, count in track_counter.items():
+    if count >= playlist_count_to_insert:
+        favorit_ids.append(track_id)
 
 
 # get the name of the intersecting track ids
-intersection_tracks = []
-
-for name, intersection in intersections.items():
-    results = sp.tracks(intersection)
-    intersection_tracks.extend(results["tracks"])
-
+favorits = [sp.track(id) for id in favorit_ids]
 
 # add the tracks to the user's library
-for track in intersection_tracks:
+for track in favorits:
     if sp.current_user_saved_tracks_contains([track["id"]])[0]:
         continue
     print(f"Adding {track['name']} to saved tracks")

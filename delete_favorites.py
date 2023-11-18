@@ -3,8 +3,8 @@ import yaml
 with open("conf.yaml", "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
-client_id = config["clientID"]
-client_secret = config["clientSecret"]
+client_id = config["client_id"]
+client_secret = config["client_secret"]
 
 
 import spotipy
